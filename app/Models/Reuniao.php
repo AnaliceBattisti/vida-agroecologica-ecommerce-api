@@ -15,9 +15,11 @@ class Reuniao extends Model
         'titulo',
         'detalhamento',
         'status',
-        'data',
         'tipo',
         'associacao_id'
+    ];
+    protected $dates = [
+        'data',
     ];
 
     public function associacao()

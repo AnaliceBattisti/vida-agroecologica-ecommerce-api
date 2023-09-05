@@ -187,6 +187,7 @@ Route::middleware('auth:sanctum')->controller(ReuniaoController::class)->prefix(
     Route::get('/', 'index');
     Route::post('/', 'store');
     Route::patch('/{cidade}', 'update');
+    Route::post('/gerar/{id}', 'gerarAta');
 
 });
 

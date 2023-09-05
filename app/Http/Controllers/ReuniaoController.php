@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Reuniao;
 use App\Models\Associacao;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+
 use Illuminate\Support\Facades\Auth;
 
 class ReuniaoController extends Controller
@@ -18,7 +22,8 @@ class ReuniaoController extends Controller
     
     public function store(Request $request)
     {
-        if(Auth::user()->roles->whereIn('nome', ['administrador', 'presidente', 'secretario'])->first()){
+        if($request->user()->hasAnyRoles(['presidente', 'secretario', 'administrador']))
+        {
             $reuniao = Reuniao::create($request->all());
             $associacao = Associacao::findOrFail($request->associacao_id);
             $reuniao->associacao()->associate($associacao);
@@ -35,14 +40,17 @@ class ReuniaoController extends Controller
 
     public function update(Request $request, $id)
     {
-        $reuniao = Reuniao::findOrFail($id);
-        $reuniao->status = $request->status;
-        $reuniao->tipo = $request->tipo;
-        $reuniao->data = $request->data;
+        if($request->user()->hasAnyRoles(['presidente', 'secretario', 'administrador']))
+        {
+            $reuniao = Reuniao::findOrFail($id);
 
-        $reuniao->update();
+            $reuniao->update($request->only('status, tipo, data'));
 
-        return response()->json(['reuniao' => $reuniao]);
+            return response()->json(['reuniao' => $reuniao->refresh()]);
+        }else{
+            return response()->json('usuário não autorizado');
+        }
+        
     }
 
     public function destroy($id)
@@ -54,13 +62,21 @@ class ReuniaoController extends Controller
         return response()->noContent();
     }
 
-    public function solicitarReuniao(Request $request)
+    public function gerarAta(Request $request, $id)
     {
-        $reuniao = Reuniao::create($request->except('status'));
-        $reuniao->status = 'Em analise';
-        $reuniao->save();
+        $data = Reuniao::findOrFail($id)->data->format('d-m-Y');
+        $nomes = User::all();
 
-        return response()->json(['reuniao' => $reuniao]);
+        $membros = [];
+        foreach($nomes as $nome){
+            $membros[] = $nome->name;
+        }
+
+        $pdf = Pdf::loadView('gerarpdf', compact('data', 'membros'));
+        
+        $ataReuniao = 'reuniao.pdf';
+        return $pdf->setPaper('a4')->stream($ataReuniao);
+
     }
 }
 
