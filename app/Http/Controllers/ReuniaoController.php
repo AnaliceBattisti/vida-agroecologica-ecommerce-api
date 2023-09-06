@@ -65,6 +65,9 @@ class ReuniaoController extends Controller
     public function gerarAta(Request $request, $id)
     {
         $data = Reuniao::findOrFail($id)->data->format('d-m-Y');
+        $reuniao = Reuniao::findOrFail($id);
+        $titulo = $reuniao->titulo;
+        $detalhamento = $reuniao->detalhamento;
         $nomes = User::all();
 
         $membros = [];
@@ -72,7 +75,7 @@ class ReuniaoController extends Controller
             $membros[] = $nome->name;
         }
 
-        $pdf = Pdf::loadView('gerarpdf', compact('data', 'membros'));
+        $pdf = Pdf::loadView('gerarpdf', compact('data', 'membros', 'titulo', 'detalhamento'));
         
         $ataReuniao = 'reuniao.pdf';
         return $pdf->setPaper('a4')->stream($ataReuniao);
